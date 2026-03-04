@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mozart — AI Music for Your Reading</title>
+    <meta name="description"
+        content="Paste a book chapter, let AI detect the vibe, and get perfect music recommendations for YouTube Music & Spotify." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,500&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0a0b14;
+            --surface: #111226;
+            --card: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.08);
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --indigo: #6366f1;
+            --amber: #f59e0b;
+            --green: #10b981;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ——— Background orbs ——— */
+        .bg-orbs {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.18;
+            animation: drift 18s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--purple);
+            top: -120px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--pink);
+            top: 40%;
+            right: -80px;
+            animation-delay: -6s;
+        }
+
+        .orb-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--indigo);
+            bottom: -100px;
+            left: 30%;
+            animation-delay: -12s;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translate(0, 0) scale(1);
+            }
+
+            to {
+                transform: translate(30px, 20px) scale(1.08);
+            }
+        }
+
+        /* ——— Layout ——— */
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+        }
+
+        /* ——— Header ——— */
+        header {
+            text-align: center;
+            padding: 56px 0 40px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #c084fc, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            font-size: 16px;
+            color: var(--muted);
+            max-width: 420px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+
+        /* ——— API Key Modal ——— */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn .25s ease;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-box {
+            background: #151628;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            border-radius: 20px;
+            padding: 36px 32px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, .6);
+            animation: slideUp .3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(24px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 18px;
+        }
+
+        .modal-box h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal-box p {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 22px;
+        }
+
+        .modal-box p a {
+            color: var(--purple);
+            text-decoration: none;
+        }
+
+        .modal-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-input-row input {
+            flex: 1;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 14px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'Inter', monospace;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .modal-input-row input:focus {
+            border-color: var(--purple);
+        }
+
+        .modal-input-row button {
+            padding: 11px 22px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity .2s;
+            white-space: nowrap;
+        }
+
+        .modal-input-row button:hover {
+            opacity: .85;
+        }
+
+        .modal-error {
+            font-size: 12px;
+            color: #f87171;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .modal-error.show {
+            display: block;
+        }
+
+        .key-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            transition: border-color .2s, color .2s;
+            text-decoration: none;
+        }
+
+        .key-badge:hover {
+            border-color: var(--purple);
+            color: var(--text);
+        }
+
+        /* ——— Card ——— */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--purple);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ——— Form ——— */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 14px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+            width: 100%;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        select option {
+            background: #1e1b4b;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 180px;
+            line-height: 1.6;
+        }
+
+        .char-count {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: right;
+        }
+
+        .char-count.warn {
+            color: var(--amber);
+        }
+
+        /* ——— Analyze button ——— */
+        .analyze-wrap {
+            display: flex;
+            justify-content: center;
+            margin: 8px 0 4px;
+        }
+
+        #analyzeBtn {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 15px 48px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .02em;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 4px 24px rgba(139, 92, 246, 0.35);
+        }
+
+        #analyzeBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
+        }
+
+        #analyzeBtn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        #analyzeBtn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        #analyzeBtn .btn-shimmer {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+            transform: translateX(-100%);
+            animation: none;
+        }
+
+        #analyzeBtn.loading .btn-shimmer {
+            animation: shimmer 1.2s infinite;
+        }
+
+        @keyframes shimmer {
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        /* ——— Loading ——— */
+        .loading-section {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading-section.show {
+            display: block;
+        }
+
+        .loader-ring {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid rgba(139, 92, 246, 0.2);
+            border-top-color: var(--purple);
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 18px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-steps {
+            list-style: none;
+            display: inline-block;
+            text-align: left;
+        }
+
+        .loading-steps li {
+            font-size: 14px;
+            color: var(--muted);
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .loading-steps li.active {
+            color: var(--text);
+        }
+
+        .loading-steps li .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+            flex-shrink: 0;
+        }
+
+        .loading-steps li.active .dot {
+            background: var(--purple);
+            box-shadow: 0 0 8px var(--purple);
+        }
+
+        .loading-steps li.done .dot {
+            background: var(--green);
+        }
+
+        /* ——— Results ——— */
+        #results {
+            display: none;
+        }
+
+        #results.show {
+            display: block;
+            animation: fadeUp .5s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ——— Vibe card ——— */
+        .vibe-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(236, 72, 153, 0.08));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .vibe-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #c084fc, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .vibe-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .pill {
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .04em;
+        }
+
+        .pill-mood {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .pill-theme {
+            background: rgba(236, 72, 153, 0.15);
+            color: #f472b6;
+            border: 1px solid rgba(236, 72, 153, 0.25);
+        }
+
+        .pill-pacing {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .vibe-summary {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.7;
+        }
+
+        /* ——— Section header ——— */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .section-header .count {
+            font-size: 12px;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--purple);
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+
+        /* ——— Music cards grid ——— */
+        .music-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .music-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform .2s, border-color .2s, box-shadow .2s;
+            animation: fadeUp .4s ease both;
+        }
+
+        .music-card:nth-child(2) {
+            animation-delay: .07s;
+        }
+
+        .music-card:nth-child(3) {
+            animation-delay: .14s;
+        }
+
+        .music-card:nth-child(4) {
+            animation-delay: .21s;
+        }
+
+        .music-card:nth-child(5) {
+            animation-delay: .28s;
+        }
+
+        .music-card:nth-child(6) {
+            animation-delay: .35s;
+        }
+
+        .music-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.12);
+        }
+
+        .music-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .music-num {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .music-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .music-name {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .music-artist {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .music-genre {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 11px;
+            padding: 2px 9px;
+            border-radius: 50px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            font-weight: 600;
+        }
+
+        .music-reason {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.55;
+            border-left: 2px solid rgba(139, 92, 246, 0.4);
+            padding-left: 10px;
+        }
+
+        .music-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-yt,
+        .btn-sp {
+            flex: 1;
+            padding: 9px 6px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: opacity .2s, transform .15s;
+            text-decoration: none;
+        }
+
+        .btn-yt:hover,
+        .btn-sp:hover {
+            opacity: .85;
+            transform: scale(1.03);
+        }
+
+        .btn-yt {
+            background: rgba(255, 0, 0, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(255, 0, 0, 0.2);
+        }
+
+        .btn-sp {
+            background: rgba(30, 215, 96, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(30, 215, 96, 0.2);
+        }
+
+        /* ——— Error ——— */
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            font-size: 14px;
+            color: #fca5a5;
+            display: none;
+        }
+
+        .error-box.quota {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.35);
+            color: #fcd34d;
+        }
+
+        .error-box.show {
+            display: block;
+        }
+
+        .error-box strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .error-box .quota-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .error-box .quota-actions a,
+        .error-box .quota-actions button {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-retry-countdown {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
+
+        .btn-aistudio {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.3) !important;
+        }
+
+        /* ——— Footer ——— */
+        footer {
+            text-align: center;
+            padding: 30px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        footer a {
+            color: var(--purple);
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="wrapper">
+
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">📖</div>
+                <span class="logo-text">Mozart</span>
+            </div>
+            <p>Paste a chapter. Let AI read the vibe. Get music that matches the mood.</p>
+        </header>
+
+
+
+        <!-- Book Info -->
+        <div class="card">
+            <div class="card-title">📚 Book Details</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="bookTitle">Book Title *</label>
+                    <input type="text" id="bookTitle" placeholder="e.g. The Shadow of the Wind" />
+                </div>
+                <div class="form-group">
+                    <label for="bookAuthor">Author</label>
+                    <input type="text" id="bookAuthor" placeholder="e.g. Carlos Ruiz Zafón" />
+                </div>
+                <div class="form-group">
+                    <label for="bookGenre">Genre</label>
+                    <select id="bookGenre">
+                        <option value="">— Select genre —</option>
+                        <option>Literary Fiction</option>
+                        <option>Fantasy</option>
+                        <option>Science Fiction</option>
+                        <option>Mystery / Thriller</option>
+                        <option>Historical Fiction</option>
+                        <option>Romance</option>
+                        <option>Horror</option>
+                        <option>Adventure</option>
+                        <option>Non-Fiction</option>
+                        <option>Philosophy</option>
+                        <option>Self-Help</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="moodHint">Mood Hint (optional)</label>
+                    <input type="text" id="moodHint" placeholder="e.g. dark, hopeful, tense…" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapter Content -->
+        <div class="card">
+            <div class="card-title">📄 Chapter Content</div>
+            <div class="form-group">
+                <label for="chapterText">Paste the chapter text you're about to read *</label>
+                <textarea id="chapterText"
+                    placeholder="Paste the chapter content here…  (at least 100 words for best results)"></textarea>
+                <p class="char-count" id="charCount">0 words</p>
+            </div>
+        </div>
+
+        <!-- Error -->
+        <div class="error-box" id="errorBox">
+            <strong>Something went wrong</strong>
+            <span id="errorMsg"></span>
+        </div>
+
+        <!-- Button -->
+        <div class="analyze-wrap">
+            <button id="analyzeBtn" onclick="analyzeChapter()">
+                <div class="btn-shimmer"></div>
+                ✦ Analyze Chapter &amp; Get Music
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-section" id="loadingSection">
+            <div class="loader-ring"></div>
+            <ul class="loading-steps" id="loadingSteps">
+                <li class="active" id="step1"><span class="dot"></span> Reading chapter mood & themes…</li>
+                <li id="step2"><span class="dot"></span> Matching music energy & tempo…</li>
+                <li id="step3"><span class="dot"></span> Curating your playlist…</li>
+            </ul>
+        </div>
+
+        <!-- Results -->
+        <div id="results">
+
+            <!-- Vibe Summary -->
+            <div class="vibe-card">
+                <div class="vibe-title" id="vibeHeadline">Chapter Vibe</div>
+                <div class="vibe-pills" id="vibePills"></div>
+                <p class="vibe-summary" id="vibeSummary"></p>
+            </div>
+
+            <!-- Music Recommendations -->
+            <div class="section-header">
+                <h2>🎵 Your Soundtrack</h2>
+                <span class="count" id="recCount">6 tracks</span>
+            </div>
+            <div class="music-grid" id="musicGrid"></div>
+
+        </div>
+
+        <footer>
+            <span>Powered by <a href="https://console.groq.com/home" target="_blank">Groq</a> &nbsp;·&nbsp;
+                Music on <a href="https://music.youtube.com" target="_blank">YouTube Music</a> &amp; <a
+                    href="https://open.spotify.com" target="_blank">Spotify</a></span>
+            <a class="key-badge" onclick="showKeyModal()" title="Change API key">🔑 Change Key</a>
+        </footer>
+
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay hidden" id="keyModal">
+        <div class="modal-box">
+            <div class="modal-icon">🔑</div>
+            <h2>Enter your Groq API Key</h2>
+            <p>
+                Mozart uses <strong>Groq</strong> (free, no credit card needed) to analyse your chapter.
+                Your key is stored only in your browser — never sent anywhere other than Groq.<br><br>
+                Get a free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>.
+            </p>
+            <div class="modal-input-row">
+                <input type="password" id="modalKeyInput" placeholder="gsk_..." autocomplete="off" />
+                <button onclick="saveModalKey()">Save &amp; Go</button>
+            </div>
+            <p class="modal-error" id="modalError">Please paste a valid Groq key (starts with gsk_)</p>
+        </div>
+    </div>
+
+    <script>
+        // ————————— API Key (localStorage) —————————
+        const API_MODEL = 'llama-3.3-70b-versatile';
+
+        function getApiKey() { return localStorage.getItem('bv_groq_key') || ''; }
+        function getModel() { return API_MODEL; }
+
+        function showKeyModal() {
+            document.getElementById('keyModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modalKeyInput').focus(), 100);
+        }
+        function hideKeyModal() {
+            document.getElementById('keyModal').classList.add('hidden');
+        }
+        function saveModalKey() {
+            const val = document.getElementById('modalKeyInput').value.trim();
+            const errEl = document.getElementById('modalError');
+            if (!val.startsWith('gsk_')) {
+                errEl.classList.add('show'); return;
+            }
+            errEl.classList.remove('show');
+            localStorage.setItem('bv_groq_key', val);
+            hideKeyModal();
+        }
+        // Allow Enter key in modal
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !document.getElementById('keyModal').classList.contains('hidden')) {
+                saveModalKey();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!getApiKey()) showKeyModal();
+            document.getElementById('chapterText').addEventListener('input', updateWordCount);
+        });
+
+        function updateWordCount() {
+            const words = document.getElementById('chapterText').value.trim().split(/\s+/).filter(Boolean).length;
+            const el = document.getElementById('charCount');
+            el.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+            el.classList.toggle('warn', words > 0 && words < 100);
+        }
+
+        // ————————— Analyze —————————
+        async function analyzeChapter() {
+            const apiKey = getApiKey();
+            const title = document.getElementById('bookTitle').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            const genre = document.getElementById('bookGenre').value;
+            const hint = document.getElementById('moodHint').value.trim();
+            const text = document.getElementById('chapterText').value.trim();
+
+            // Validation
+            hideError();
+            if (!apiKey) { showKeyModal(); return; }
+            if (!title) { showError('Please enter a book title.'); return; }
+            if (!text || text.split(/\s+/).length < 30) { showError('Please paste at least 30 words of chapter text for a meaningful analysis.'); return; }
+
+            setLoading(true);
+
+            const prompt = `You are a literary analyst and music curator. A reader is about to read a chapter and wants music to match the vibe.
+
+BOOK: "${title}"${author ? ` by ${author}` : ''}${genre ? ` | Genre: ${genre}` : ''}${hint ? ` | Mood hint: ${hint}` : ''}
+
+CHAPTER EXCERPT:
+"""
+${text.slice(0, 6000)}
+"""
+
+Analyze the emotional tone, themes, and pacing of this chapter. Then recommend exactly 6 **instrumental** pieces (real, existing songs or compositions) — NO songs with lyrics or vocals, only tunes, scores, ambient tracks, or instrumental pieces — that perfectly match the reading experience.
+
+Respond with ONLY valid JSON in this exact format — no extra text, no markdown fences:
+{
+  "vibe": {
+    "headline": "Short evocative phrase (3-6 words describing the chapter's mood)",
+    "mood": "Primary emotional tone (e.g. melancholic, suspenseful, euphoric)",
+    "themes": ["theme1","theme2","theme3"],
+    "pacing": "Reading pacing (e.g. slow & contemplative, intense & fast-paced)",
+    "summary": "2-3 sentences explaining why these themes and mood dominate this chapter."
+  },
+  "recommendations": [
+    {
+      "name": "Song or playlist name",
+      "artist": "Artist or composer name",
+      "genre": "Music genre",
+      "reason": "One sentence: why this specific track matches this chapter's vibe.",
+      "ytQuery": "Exact YouTube Music search query",
+      "spotifyQuery": "Exact Spotify search query"
+    }
+  ]
+}
+
+STRICT RULE: Every single recommendation MUST be purely instrumental — absolutely no songs with lyrics or vocals of any kind. Only instrumentals, scores, ambient music, classical pieces, or lo-fi tunes. Prioritize atmosphere over popularity.`;
+
+            try {
+                // Animate loading steps
+                animateLoadingSteps();
+
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: getModel(),
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.8,
+                        max_tokens: 2048,
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err?.error?.message || `API error ${response.status}`);
+                }
+
+                const data = await response.json();
+                let raw = data?.choices?.[0]?.message?.content || '';
+
+                // Strip possible markdown fences
+                raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+                const parsed = JSON.parse(raw);
+                renderResults(parsed);
+
+            } catch (e) {
+                const msg = e.message || 'An unexpected error occurred. Please try again.';
+                const isQuota = /quota exceeded/i.test(msg) || /rate.?limit/i.test(msg) || /insufficient_quota/i.test(msg);
+                showError(msg, isQuota);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // ————————— Loading steps animation —————————
+        let stepTimer = null;
+        function animateLoadingSteps() {
+            const steps = ['step1', 'step2', 'step3'];
+            let i = 0;
+            clearInterval(stepTimer);
+            steps.forEach(id => {
+                const el = document.getElementById(id);
+                el.className = '';
+            });
+            document.getElementById('step1').className = 'active';
+
+            stepTimer = setInterval(() => {
+                if (i < steps.length - 1) {
+                    document.getElementById(steps[i]).className = 'done';
+                    i++;
+                    document.getElementById(steps[i]).className = 'active';
+                }
+            }, 1800);
+        }
+
+        // ————————— Render results —————————
+        function renderResults(data) {
+            clearInterval(stepTimer);
+
+            const { vibe, recommendations } = data;
+
+            // Vibe card
+            document.getElementById('vibeHeadline').textContent = vibe.headline || 'Chapter Vibe';
+            const pills = document.getElementById('vibePills');
+            pills.innerHTML = '';
+            if (vibe.mood) pills.innerHTML += `<span class="pill pill-mood">🎭 ${vibe.mood}</span>`;
+            (vibe.themes || []).forEach(t => {
+                pills.innerHTML += `<span class="pill pill-theme"># ${t}</span>`;
+            });
+            if (vibe.pacing) pills.innerHTML += `<span class="pill pill-pacing">⏱ ${vibe.pacing}</span>`;
+            document.getElementById('vibeSummary').textContent = vibe.summary || '';
+
+            // Music grid
+            const grid = document.getElementById('musicGrid');
+            grid.innerHTML = '';
+            (recommendations || []).forEach((rec, i) => {
+                const ytUrl = `https://music.youtube.com/search?q=${encodeURIComponent(rec.ytQuery || rec.name + ' ' + rec.artist)}`;
+                const spUrl = `https://open.spotify.com/search/${encodeURIComponent(rec.spotifyQuery || rec.name + ' ' + rec.artist)}`;
+
+                grid.innerHTML += `
+      <div class="music-card">
+        <div class="music-card-top">
+          <div class="music-num">${i + 1}</div>
+          <div class="music-info">
+            <div class="music-name" title="${esc(rec.name)}">${esc(rec.name)}</div>
+            <div class="music-artist">${esc(rec.artist)}</div>
+            <span class="music-genre">${esc(rec.genre)}</span>
+          </div>
+        </div>
+        <p class="music-reason">${esc(rec.reason)}</p>
+        <div class="music-actions">
+          <a class="btn-yt" href="${ytUrl}" target="_blank" rel="noopener">
+            ▶ YT Music
+          </a>
+          <a class="btn-sp" href="${spUrl}" target="_blank" rel="noopener">
+            ♫ Spotify
+          </a>
+        </div>
+      </div>`;
+            });
+
+            document.getElementById('recCount').textContent = `${recommendations.length} tracks`;
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ————————— Helpers —————————
+        function esc(s) {
+            if (!s) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function setLoading(on) {
+            const btn = document.getElementById('analyzeBtn');
+            const ls = document.getElementById('loadingSection');
+            const res = document.getElementById('results');
+
+            btn.disabled = on;
+            btn.classList.toggle('loading', on);
+            ls.classList.toggle('show', on);
+
+            if (on) {
+                res.classList.remove('show');
+                // Reset steps
+                ['step1', 'step2', 'step3'].forEach((id, i) => {
+                    document.getElementById(id).className = i === 0 ? 'active' : '';
+                });
+            }
+        }
+
+        let countdownTimer = null;
+
+        function showError(msg, isQuota = false) {
+            clearInterval(countdownTimer);
+            const box = document.getElementById('errorBox');
+            box.classList.toggle('quota', isQuota);
+
+            if (isQuota) {
+                // Parse retry seconds from Google's error message
+                const match = msg.match(/retry in ([\d.]+)s/i);
+                const retrySecs = match ? Math.ceil(parseFloat(match[1])) : null;
+
+                let actionsHtml = `
+                  <div class="quota-actions">
+                    ${retrySecs ? `<button class="btn-retry-countdown" id="retryBtn" disabled>⏱ Retry in <span id="retryCountdown">${retrySecs}</span>s</button>` : ''}
+                    <a class="btn-aistudio" href="https://aistudio.google.com/app/apikey" target="_blank">🔑 Get New Key</a>
+                    <a class="btn-aistudio" href="https://ai.dev/rate-limit" target="_blank">📊 Check Quota</a>
+                  </div>`;
+
+                box.innerHTML = `
+                  <strong>⚠️ API Quota Exceeded</strong>
+                  <span>Your free-tier quota is exhausted. Try a different model, wait for quota to reset, or use a fresh API key from AI Studio.</span>
+                  ${actionsHtml}`;
+
+                if (retrySecs) {
+                    let remaining = retrySecs;
+                    countdownTimer = setInterval(() => {
+                        remaining--;
+                        const el = document.getElementById('retryCountdown');
+                        const btn = document.getElementById('retryBtn');
+                        if (!el) { clearInterval(countdownTimer); return; }
+                        if (remaining <= 0) {
+                            clearInterval(countdownTimer);
+                            btn.textContent = '▶ Retry Now';
+                            btn.disabled = false;
+                            btn.onclick = () => { hideError(); analyzeChapter(); };
+                        } else {
+                            el.textContent = remaining;
+                        }
+                    }, 1000);
+                }
+            } else {
+                box.innerHTML = `<strong>Something went wrong</strong><span id="errorMsg">${esc(msg)}</span>`;
+            }
+
+            box.classList.add('show');
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function hideError() {
+            clearInterval(countdownTimer);
+            const box = document.getElementById('errorBox');
+            box.classList.remove('show', 'quota');
+            box.innerHTML = '<strong>Something went wrong</strong><span id="errorMsg"></span>';
+        }
+    </script>
+</body>
+
+</html>
