@@ -191,6 +191,13 @@
             animation: slideUp .3s ease;
         }
 
+        @media (max-width: 500px) {
+            .modal-box {
+                padding: 24px 18px;
+                border-radius: 16px;
+            }
+        }
+
         @keyframes slideUp {
             from {
                 transform: translateY(24px);
@@ -240,6 +247,7 @@
 
         .modal-input-row input {
             flex: 1;
+            min-width: 0;
             background: rgba(255, 255, 255, .06);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -270,6 +278,17 @@
 
         .modal-input-row button:hover {
             opacity: .85;
+        }
+
+        @media (max-width: 500px) {
+            .modal-input-row {
+                flex-direction: column;
+            }
+
+            .modal-input-row button {
+                width: 100%;
+                padding: 13px;
+            }
         }
 
         .modal-error {
