@@ -414,6 +414,66 @@
             color: var(--amber);
         }
 
+        /* ——— Input mode toggle ——— */
+        .input-mode-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 5px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background .2s, color .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.15));
+            color: var(--text);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .mode-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .input-mode-panel {
+            display: none;
+        }
+
+        .input-mode-panel.active {
+            display: block;
+        }
+
+        .describe-hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        .describe-hint span {
+            color: #c084fc;
+            font-weight: 600;
+        }
+
         /* ——— Analyze button ——— */
         .analyze-wrap {
             display: flex;
@@ -918,11 +978,32 @@
         <!-- Chapter Content -->
         <div class="card">
             <div class="card-title">📄 Chapter Content</div>
-            <div class="form-group">
-                <label for="chapterText">Paste the chapter text you're about to read *</label>
-                <textarea id="chapterText"
-                    placeholder="Paste the chapter content here…  (at least 100 words for best results)"></textarea>
-                <p class="char-count" id="charCount">0 words</p>
+
+            <!-- Mode tabs -->
+            <div class="input-mode-tabs">
+                <button class="mode-tab active" id="tabPaste" onclick="switchMode('paste')">📋 Paste Chapter</button>
+                <button class="mode-tab" id="tabDescribe" onclick="switchMode('describe')">✍️ Describe It</button>
+            </div>
+
+            <!-- Paste mode -->
+            <div class="input-mode-panel active" id="panelPaste">
+                <div class="form-group">
+                    <label for="chapterText">Paste the chapter text you're about to read *</label>
+                    <textarea id="chapterText"
+                        placeholder="Paste the chapter content here… (at least 30 words for best results)"></textarea>
+                    <p class="char-count" id="charCount">0 words</p>
+                </div>
+            </div>
+
+            <!-- Describe mode -->
+            <div class="input-mode-panel" id="panelDescribe">
+                <div class="form-group">
+                    <label for="chapterDesc">Describe the chapter in your own words *</label>
+                    <textarea id="chapterDesc" style="min-height:150px"
+                        placeholder="e.g. A young wizard sneaks into the forbidden library at midnight. The atmosphere is tense and mysterious — candles flicker, shadows move. He discovers a secret about his past that changes everything…"></textarea>
+                    <p class="describe-hint">No need to paste the full text — just tell us <span>what happens, the mood,
+                            and any key moments</span>. A few sentences is enough.</p>
+                </div>
             </div>
         </div>
 
@@ -1027,6 +1108,16 @@
             }
         });
 
+        let inputMode = 'paste'; // 'paste' | 'describe'
+
+        function switchMode(mode) {
+            inputMode = mode;
+            document.getElementById('tabPaste').classList.toggle('active', mode === 'paste');
+            document.getElementById('tabDescribe').classList.toggle('active', mode === 'describe');
+            document.getElementById('panelPaste').classList.toggle('active', mode === 'paste');
+            document.getElementById('panelDescribe').classList.toggle('active', mode === 'describe');
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             if (!getApiKey()) showKeyModal();
             document.getElementById('chapterText').addEventListener('input', updateWordCount);
@@ -1036,7 +1127,7 @@
             const words = document.getElementById('chapterText').value.trim().split(/\s+/).filter(Boolean).length;
             const el = document.getElementById('charCount');
             el.textContent = `${words} word${words !== 1 ? 's' : ''}`;
-            el.classList.toggle('warn', words > 0 && words < 100);
+            el.classList.toggle('warn', words > 0 && words < 30);
         }
 
         // ————————— Analyze —————————
@@ -1047,23 +1138,36 @@
             const genre = document.getElementById('bookGenre').value;
             const hint = document.getElementById('moodHint').value.trim();
             const text = document.getElementById('chapterText').value.trim();
+            const desc = document.getElementById('chapterDesc').value.trim();
 
             // Validation
             hideError();
             if (!apiKey) { showKeyModal(); return; }
             if (!title) { showError('Please enter a book title.'); return; }
-            if (!text || text.split(/\s+/).length < 30) { showError('Please paste at least 30 words of chapter text for a meaningful analysis.'); return; }
+
+            if (inputMode === 'paste') {
+                if (!text || text.split(/\s+/).length < 30) {
+                    showError('Please paste at least 30 words of chapter text for a meaningful analysis.'); return;
+                }
+            } else {
+                if (!desc || desc.split(/\s+/).length < 10) {
+                    showError('Please describe the chapter in at least 10 words so we can detect its vibe.'); return;
+                }
+            }
 
             setLoading(true);
 
+            const bookMeta = `"${title}"${author ? ` by ${author}` : ''}${genre ? ` | Genre: ${genre}` : ''}${hint ? ` | Mood hint: ${hint}` : ''}`;
+
+            const chapterBlock = inputMode === 'paste'
+                ? `CHAPTER EXCERPT:\n"""\n${text.slice(0, 6000)}\n"""`
+                : `CHAPTER DESCRIPTION (written by the reader in their own words):\n"""\n${desc}\n"""\n\nNote: no raw text was provided — base your analysis entirely on this description.`;
+
             const prompt = `You are a literary analyst and music curator. A reader is about to read a chapter and wants music to match the vibe.
 
-BOOK: "${title}"${author ? ` by ${author}` : ''}${genre ? ` | Genre: ${genre}` : ''}${hint ? ` | Mood hint: ${hint}` : ''}
+BOOK: ${bookMeta}
 
-CHAPTER EXCERPT:
-"""
-${text.slice(0, 6000)}
-"""
+${chapterBlock}
 
 Analyze the emotional tone, themes, and pacing of this chapter. Then recommend exactly 6 **instrumental** pieces (real, existing songs or compositions) — NO songs with lyrics or vocals, only tunes, scores, ambient tracks, or instrumental pieces — that perfectly match the reading experience.
 
