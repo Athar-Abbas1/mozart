@@ -1,0 +1,35 @@
+{
+  "name": "Mozart — AI Music for Your Reading",
+  "short_name": "Mozart",
+  "description": "Paste a book chapter, let AI detect the vibe, and get perfect music recommendations.",
+  "start_url": "/mozart/",
+  "display": "standalone",
+  "background_color": "#0a0b14",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "scope": "/mozart/",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "books", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Analyze a Chapter",
+      "short_name": "Analyze",
+      "description": "Jump straight to the chapter analyzer",
+      "url": "/",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
