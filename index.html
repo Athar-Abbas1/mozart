@@ -331,6 +331,31 @@
             color: var(--text);
         }
 
+        .install-badge {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #fff;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            cursor: pointer;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: none;
+            transition: opacity .2s, transform .2s;
+            font-weight: 600;
+        }
+
+        .install-badge.show {
+            display: inline-flex;
+            animation: fadeIn .3s ease;
+        }
+        
+        .install-badge:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
         /* ——— Card ——— */
         .card {
             background: var(--card);
@@ -1064,7 +1089,10 @@
             <span>Powered by <a href="https://console.groq.com/home" target="_blank">Groq</a> &nbsp;·&nbsp;
                 Music on <a href="https://music.youtube.com" target="_blank">YouTube Music</a> &amp; <a
                     href="https://open.spotify.com" target="_blank">Spotify</a></span>
-            <a class="key-badge" onclick="showKeyModal()" title="Change API key">🔑 Change Key</a>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a class="key-badge" onclick="showKeyModal()" title="Change API key">🔑 Change Key</a>
+                <button class="install-badge" id="installBtn" title="Install App">📲 Install App</button>
+            </div>
         </footer>
 
     </div>
@@ -1406,6 +1434,40 @@ STRICT RULE: Every single recommendation MUST be purely instrumental — absolut
                     .catch(err => console.warn('[Mozart] SW registration failed:', err));
             });
         }
+
+        // ——— PWA Install Logic ———
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can install the PWA
+            installBtn.classList.add('show');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+            // Hide the button
+            installBtn.classList.remove('show');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Hide the app-provided install promotion
+            installBtn.classList.remove('show');
+            // Clear the deferredPrompt so it can be garbage collected
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
     </script>
 </body>
 
